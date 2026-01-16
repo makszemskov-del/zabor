@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#16213e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Калькулятор заборов</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+:root{--bg:#1a1a2e;--bg2:#16213e;--card:#0f3460;--accent:#e94560;--text:#eee;--muted:#aaa;--border:#334155;--success:#4ade80;--warn:#fbbf24}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:60px}
+.tabs{display:flex;background:var(--bg2);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:100}
+.tab{flex:1;padding:12px 4px;text-align:center;cursor:pointer;border:none;background:none;color:var(--muted);font-size:12px;font-weight:500}
+.tab.active{color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px}
+.container{max-width:800px;margin:0 auto;padding:12px}
+.page{display:none}.page.active{display:block}
+.card{background:var(--card);border-radius:10px;padding:14px;margin-bottom:14px}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.card-title{font-size:15px;font-weight:600;color:var(--accent)}
+.form-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.form-group{margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+input,select{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:14px}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+.btn{padding:10px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-secondary{background:var(--bg2);color:var(--text);border:1px solid var(--border)}
+.btn-block{width:100%}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.checkbox-label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.checkbox-label input{width:18px;height:18px;accent-color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+th,td{padding:8px 4px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--bg2);color:var(--muted);font-size:11px}
+.text-right{text-align:right}
+.totals{background:var(--bg2);border-radius:6px;padding:10px;margin-top:12px}
+.total-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}
+.total-row:last-child{border-bottom:none}
+.total-label{color:var(--muted);font-size:13px}
+.total-value{font-weight:600}
+.total-value.accent{color:var(--accent);font-size:16px}
+.total-value.success{color:var(--success)}
+.add-btn{width:100%;padding:12px;border:2px dashed var(--border);border-radius:8px;background:none;color:var(--muted);cursor:pointer;font-size:14px}
+.add-btn:hover{border-color:var(--accent);color:var(--accent)}
+.delete-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:16px;padding:4px}
+.section-title{background:var(--accent);color:#fff;padding:10px;border-radius:6px;font-size:14px;font-weight:600;margin:16px 0 10px}
+.subsection-title{background:var(--bg2);padding:8px;border-radius:4px;font-size:13px;color:var(--muted);margin:10px 0 8px}
+.hidden{display:none!important}
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--card);padding:10px 20px;border-radius:6px;z-index:2000;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.price-cat{margin-bottom:6px}
+.price-cat-header{background:var(--bg2);padding:10px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;font-size:13px;font-weight:600}
+.price-items{display:none;padding:8px 0}
+.price-items.open{display:block}
+.price-item{display:grid;grid-template-columns:1fr 70px 70px;gap:6px;padding:6px;border-bottom:1px solid var(--border);align-items:center;font-size:12px}
+.price-input{padding:6px;font-size:12px}
+.side-header{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:6px;margin-bottom:10px;cursor:pointer}
+.side-content{display:none}
+.side-content.open{display:block}
+.gate-item,.wicket-item{background:var(--bg2);border-radius:6px;padding:10px;margin-bottom:10px}
+@media(max-width:500px){.form-row{grid-template-columns:1fr}.tab{font-size:11px;padding:10px 2px}}
+.offline-bar{background:var(--warn);color:#000;text-align:center;padding:4px;font-size:11px;display:none}
+body.offline .offline-bar{display:block}
+  </style>
+</head>
+<body>
+<div class="offline-bar">⚡ Оффлайн режим</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="calc">Расчёт</button>
+  <button class="tab" data-tab="client">Смета</button>
+  <button class="tab" data-tab="manager">Менеджер</button>
+  <button class="tab" data-tab="prices">Цены</button>
+</div>
+
+<div class="container">
+  <!-- СТРАНИЦА РАСЧЁТА -->
+  <div id="page-calc" class="page active">
+    <div class="card">
+      <div class="form-group">
+        <label>Название объекта</label>
+        <input type="text" id="project-name" placeholder="Например: Кискелово">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Клиент</label>
+          <input type="text" id="client-name" placeholder="ФИО">
+        </div>
+        <div class="form-group">
+          <label>Телефон</label>
+          <input type="tel" id="client-phone" placeholder="+7...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Адрес</label>
+        <input type="text" id="client-address" placeholder="Адрес объекта">
+      </div>
+    </div>
+
+    <div id="sides-container"></div>
+    <button class="add-btn" id="add-side-btn">+ Добавить сторону</button>
+
+    <!-- Дополнительно -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-title" style="margin-bottom:10px">Дополнительно</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Миниэкскаватор (смен)</label>
+          <select id="excavator-shifts">
+            <option value="0">Не нужен</option>
+            <option value="1">1 смена</option>
+            <option value="2">2 смены</option>
+            <option value="3">3 смены</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Доставка (рейсов)</label>
+          <input type="number" id="delivery-trips" min="0" value="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- ПИКС -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Столбы ПИКС</span>
+        <button class="btn btn-secondary" onclick="addPiks()">+ Добавить</button>
+      </div>
+      <div id="piks-container"></div>
+    </div>
+
+    <!-- Скидка/Наценка -->
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Скидка клиенту, %</label>
+          <input type="number" id="discount" min="0" max="50" value="0">
+        </div>
+        <div class="form-group">
+          <label>Предоплата, %</label>
+          <input type="number" id="prepayment" min="0" max="100" value="33">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Заметки</label>
+        <input type="text" id="notes" placeholder="Заметки по объекту">
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-primary btn-block" onclick="calculateAll()">📊 Рассчитать смету</button>
+    </div>
+  </div>
+
+  <!-- СМЕТА КЛИЕНТА -->
+  <div id="page-client" class="page">
+    <div id="estimate-client"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="savePDF(false)">📄 Сохранить PDF</button>
+      <button class="btn btn-secondary" onclick="sharePDF()">📤 Отправить</button>
+    </div>
+  </div>
+
+  <!-- СМЕТА МЕНЕДЖЕРА -->
+  <div id="page-manager" class="page">
+    <div id="estimate-manager"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveExcel()">📊 Сохранить Excel</button>
+      <button class="btn btn-secondary" onclick="savePDF(true)">📄 PDF (полный)</button>
+    </div>
+  </div>
+
+  <!-- ЦЕНЫ -->
+  <div id="page-prices" class="page">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px">Управление ценами</div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="exportPricesFile()">💾 Экспорт</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">📂 Импорт</button>
+        <button class="btn btn-secondary" onclick="resetAllPrices()">🔄 Сброс</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importPricesFile(this.files[0])">
+      </div>
+    </div>
+    <div id="prices-container"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== БАЗА ЦЕН =====
+const DEFAULT_PRICES = {
+  materials: {
+    gitter_153_3:{name:"Сетка Гиттер 1.53м 3мм",unit:"шт",buy:920,sell:1150},
+    gitter_153_4:{name:"Сетка Гиттер 1.53м 4мм",unit:"шт",buy:1280,sell:1430},
+    gitter_153_5:{name:"Сетка Гиттер 1.53м 5мм",unit:"шт",buy:1450,sell:1620},
+    gitter_173_3:{name:"Сетка Гиттер 1.73м 3мм",unit:"шт",buy:990,sell:1250},
+    gitter_173_4:{name:"Сетка Гиттер 1.73м 4мм",unit:"шт",buy:1520,sell:1790},
+    gitter_173_5:{name:"Сетка Гиттер 1.73м 5мм",unit:"шт",buy:1720,sell:2050},
+    gitter_203_3:{name:"Сетка Гиттер 2.03м 3мм",unit:"шт",buy:1130,sell:1390},
+    gitter_203_4:{name:"Сетка Гиттер 2.03м 4мм",unit:"шт",buy:1630,sell:1910},
+    gitter_203_5:{name:"Сетка Гиттер 2.03м 5мм",unit:"шт",buy:2520,sell:2995},
+    proflist_035_1_16:{name:"Профлист 0.35 1ст 1.6м",unit:"шт",buy:650,sell:800},
+    proflist_035_1_18:{name:"Профлист 0.35 1ст 1.8м",unit:"шт",buy:725,sell:850},
+    proflist_035_1_20:{name:"Профлист 0.35 1ст 2.0м",unit:"шт",buy:780,sell:900},
+    proflist_035_1_22:{name:"Профлист 0.35 1ст 2.2м",unit:"шт",buy:890,sell:1070},
+    proflist_035_2_16:{name:"Профлист 0.35 2ст 1.6м",unit:"шт",buy:685,sell:845},
+    proflist_035_2_18:{name:"Профлист 0.35 2ст 1.8м",unit:"шт",buy:760,sell:895},
+    proflist_035_2_20:{name:"Профлист 0.35 2ст 2.0м",unit:"шт",buy:815,sell:945},
+    proflist_035_2_22:{name:"Профлист 0.35 2ст 2.2м",unit:"шт",buy:925,sell:1115},
+    proflist_04_1_16:{name:"Профлист 0.4 1ст 1.6м",unit:"шт",buy:770,sell:940},
+    proflist_04_1_18:{name:"Профлист 0.4 1ст 1.8м",unit:"шт",buy:860,sell:1050},
+    proflist_04_1_20:{name:"Профлист 0.4 1ст 2.0м",unit:"шт",buy:950,sell:1190},
+    proflist_04_1_22:{name:"Профлист 0.4 1ст 2.2м",unit:"шт",buy:1110,sell:1386},
+    proflist_04_2_16:{name:"Профлист 0.4 2ст 1.6м",unit:"шт",buy:920,sell:1110},
+    proflist_04_2_18:{name:"Профлист 0.4 2ст 1.8м",unit:"шт",buy:1030,sell:1260},
+    proflist_04_2_20:{name:"Профлист 0.4 2ст 2.0м",unit:"шт",buy:1140,sell:1390},
+    proflist_04_2_22:{name:"Профлист 0.4 2ст 2.2м",unit:"шт",buy:1260,sell:1590},
+    proflist_045_1_16:{name:"Профлист 0.45 1ст 1.6м",unit:"шт",buy:920,sell:1110},
+    proflist_045_1_18:{name:"Профлист 0.45 1ст 1.8м",unit:"шт",buy:1030,sell:1270},
+    proflist_045_1_20:{name:"Профлист 0.45 1ст 2.0м",unit:"шт",buy:1140,sell:1395},
+    proflist_045_1_22:{name:"Профлист 0.45 1ст 2.2м",unit:"шт",buy:1280,sell:1610},
+    proflist_045_2_16:{name:"Профлист 0.45 2ст 1.6м",unit:"шт",buy:1130,sell:1370},
+    proflist_045_2_18:{name:"Профлист 0.45 2ст 1.8м",unit:"шт",buy:1220,sell:1490},
+    proflist_045_2_20:{name:"Профлист 0.45 2ст 2.0м",unit:"шт",buy:1320,sell:1605},
+    proflist_045_2_22:{name:"Профлист 0.45 2ст 2.2м",unit:"шт",buy:1490,sell:1815},
+    shtaketnik_15:{name:"Штакетник 125мм 1.5м",unit:"шт",buy:138,sell:178},
+    shtaketnik_18:{name:"Штакетник 125мм 1.8м",unit:"шт",buy:158,sell:198},
+    shtaketnik_20:{name:"Штакетник 125мм 2.0м",unit:"шт",buy:176,sell:220},
+    shtaketnik_22:{name:"Штакетник 125мм 2.2м",unit:"шт",buy:194,sell:242},
+    finishing_strip:{name:"Планка финишная 2м",unit:"шт",buy:200,sell:250},
+    post_60x60_2m:{name:"Столб 60х60 2м",unit:"шт",buy:720,sell:890},
+    post_60x60_3m:{name:"Столб 60х60 3м",unit:"шт",buy:1080,sell:1330},
+    cap_plastic_60:{name:"Заглушка 60х60",unit:"шт",buy:35,sell:50},
+    post_80x80_3m:{name:"Столб 80х80 3м",unit:"шт",buy:2730,sell:3270},
+    cap_plastic_80:{name:"Заглушка 80х80",unit:"шт",buy:45,sell:70},
+    pile_76_15:{name:"Свая 76мм 1.5м",unit:"шт",buy:1280,sell:1550},
+    pile_76_20:{name:"Свая 76мм 2.0м",unit:"шт",buy:1450,sell:1750},
+    pile_76_25:{name:"Свая 76мм 2.5м",unit:"шт",buy:1650,sell:1900},
+    pile_76_30:{name:"Свая 76мм 3.0м",unit:"шт",buy:1850,sell:2150},
+    pile_89_15:{name:"Свая 89мм 1.5м",unit:"шт",buy:1600,sell:1980},
+    pile_89_20:{name:"Свая 89мм 2.0м",unit:"шт",buy:1700,sell:2150},
+    pile_89_25:{name:"Свая 89мм 2.5м",unit:"шт",buy:1900,sell:2350},
+    pile_89_30:{name:"Свая 89мм 3.0м",unit:"шт",buy:2200,sell:2700},
+    cap_76:{name:"Оголовок 76мм",unit:"шт",buy:320,sell:500},
+    cap_89:{name:"Оголовок 89мм усил.",unit:"шт",buy:350,sell:600},
+    lag_40x20_6m:{name:"Лага 40х20 6м",unit:"шт",buy:960,sell:1290},
+    clamp:{name:"Хомут для Гиттер",unit:"шт",buy:55,sell:70},
+    bracket:{name:"Кронштейн для лаг",unit:"шт",buy:85,sell:120},
+    screw_55x19:{name:"Саморез 5.5х19",unit:"шт",buy:3,sell:4},
+    gate_sliding_30:{name:"Ворота откатные 3м",unit:"компл",buy:35000,sell:54000},
+    gate_sliding_35:{name:"Ворота откатные 3.5м",unit:"компл",buy:37000,sell:56000},
+    gate_sliding_40:{name:"Ворота откатные 4м",unit:"компл",buy:40000,sell:59000},
+    gate_sliding_45:{name:"Ворота откатные 4.5м",unit:"компл",buy:42000,sell:61000},
+    gate_sliding_50:{name:"Ворота откатные 5м",unit:"компл",buy:45000,sell:64000},
+    gate_sliding_55:{name:"Ворота откатные 5.5м",unit:"компл",buy:63000,sell:85000},
+    gate_sliding_60:{name:"Ворота откатные 6м",unit:"компл",buy:69000,sell:89000},
+    foundation_sliding:{name:"Закладные откатных",unit:"компл",buy:5500,sell:7500},
+    gate_swing_30:{name:"Ворота распашные 3м",unit:"компл",buy:16500,sell:28000},
+    gate_swing_35:{name:"Ворота распашные 3.5м",unit:"компл",buy:18500,sell:32000},
+    gate_swing_40:{name:"Ворота распашные 4м",unit:"компл",buy:21000,sell:36000},
+    gate_gitter_sliding_30:{name:"Ворота откат. Гиттер 3м",unit:"компл",buy:38000,sell:57000},
+    gate_gitter_sliding_35:{name:"Ворота откат. Гиттер 3.5м",unit:"компл",buy:40000,sell:59000},
+    gate_gitter_sliding_40:{name:"Ворота откат. Гиттер 4м",unit:"компл",buy:43000,sell:62000},
+    gate_gitter_sliding_45:{name:"Ворота откат. Гиттер 4.5м",unit:"компл",buy:45000,sell:64000},
+    gate_gitter_sliding_50:{name:"Ворота откат. Гиттер 5м",unit:"компл",buy:48000,sell:67000},
+    gate_gitter_sliding_55:{name:"Ворота откат. Гиттер 5.5м",unit:"компл",buy:66000,sell:85000},
+    gate_gitter_sliding_60:{name:"Ворота откат. Гиттер 6м",unit:"компл",buy:72000,sell:91000},
+    gate_gitter_swing_30:{name:"Ворота распаш. Гиттер 3м",unit:"компл",buy:18500,sell:30500},
+    gate_gitter_swing_35:{name:"Ворота распаш. Гиттер 3.5м",unit:"компл",buy:20500,sell:32500},
+    gate_gitter_swing_40:{name:"Ворота распаш. Гиттер 4м",unit:"компл",buy:23000,sell:35000},
+    wicket_gitter:{name:"Калитка Гиттер 1м",unit:"шт",buy:9000,sell:15700},
+    wicket_standard:{name:"Калитка 1м",unit:"шт",buy:10000,sell:17900},
+    wicket_builtin:{name:"Встроенная калитка",unit:"шт",buy:10000,sell:17000},
+    lock_mortise:{name:"Замок врезной",unit:"шт",buy:3200,sell:3950},
+    came_bx608:{name:"Привод Came BX608",unit:"компл",buy:27000,sell:34000},
+    gear_rack:{name:"Зубчатая рейка 1м",unit:"шт",buy:880,sell:1250},
+    remote:{name:"Брелок доп.",unit:"шт",buy:1550,sell:1950},
+    photo_sensor:{name:"Фотоэлементы пара",unit:"компл",buy:1750,sell:2180},
+    wires_gofra:{name:"Провода+гофра",unit:"компл",buy:800,sell:1000},
+    lamp_signal:{name:"Лампа сигнальная",unit:"шт",buy:1420,sell:1780},
+    antenna:{name:"Антенна",unit:"шт",buy:1120,sell:1400},
+    piks_yellow:{name:"ПИКС Жёлтый кирпич",unit:"шт",buy:450,sell:540},
+    piks_red:{name:"ПИКС Красный кирпич",unit:"шт",buy:450,sell:540},
+    piks_brown:{name:"ПИКС Коричневый кирпич",unit:"шт",buy:450,sell:540},
+    piks_graphite:{name:"ПИКС Графитовый кирпич",unit:"шт",buy:450,sell:540},
+    piks_cap:{name:"Крышка ПИКС",unit:"шт",buy:1200,sell:1400},
+    piks_guide:{name:"Направляющая ПИКС",unit:"шт",buy:200,sell:400},
+    piks_fastener:{name:"Крепёж ПИКС",unit:"шт",buy:0.5,sell:2},
+    gravel_bag:{name:"Щебень 40кг",unit:"меш",buy:180,sell:220},
+    cps_bag:{name:"ЦПС-300 25кг",unit:"меш",buy:250,sell:350},
+    paint_touch:{name:"Грунт-эмаль 3в1 1л",unit:"шт",buy:900,sell:1500},
+    consumables:{name:"Расходники",unit:"компл",buy:1500,sell:2000},
+    excavator:{name:"Миниэкскаватор",unit:"смена",buy:20000,sell:25000}
+  },
+  works: {
+    work_drilling:{name:"Бурение лунки",unit:"шт",crew:350,sell:750},
+    work_butovanie:{name:"Монтаж столба бутованием",unit:"шт",crew:250,sell:700},
+    work_pile_install:{name:"Монтаж винтовой сваи",unit:"шт",crew:950,sell:1400},
+    work_cap_weld:{name:"Приварка оголовка",unit:"шт",crew:0,sell:300},
+    work_post_weld:{name:"Приварка столба",unit:"шт",crew:0,sell:500},
+    work_cps_fill:{name:"Засыпка сваи ЦПС",unit:"шт",crew:100,sell:200},
+    work_lag_weld:{name:"Приварка лаги",unit:"шт",crew:150,sell:300},
+    work_weld_paint:{name:"Окраска сварного шва",unit:"шт",crew:50,sell:100},
+    work_gitter_install:{name:"Монтаж секции Гиттер",unit:"шт",crew:250,sell:500},
+    work_proflist_install:{name:"Монтаж профлиста",unit:"м²",crew:150,sell:450},
+    work_shtaketnik_install:{name:"Монтаж штакетника",unit:"м²",crew:65,sell:100},
+    work_strip_install:{name:"Монтаж финишной планки",unit:"шт",crew:100,sell:200},
+    work_gate_sliding:{name:"Монтаж откатных ворот",unit:"компл",crew:18000,sell:26000},
+    work_gate_fill:{name:"Зашивка ворот",unit:"м²",crew:150,sell:450},
+    work_swing_leaf:{name:"Монтаж воротины",unit:"шт",crew:1000,sell:3000},
+    work_swing_fill:{name:"Зашивка распашных",unit:"м²",crew:250,sell:450},
+    work_swing_hardware:{name:"Монтаж фурнитуры",unit:"компл",crew:1000,sell:1500},
+    work_swing_paint:{name:"Окраска швов ворота",unit:"компл",crew:0,sell:500},
+    work_wicket_mount:{name:"Монтаж калитки",unit:"шт",crew:8000,sell:12000},
+    work_wicket_fill:{name:"Зашивка калитки",unit:"м²",crew:250,sell:450},
+    work_wicket_hardware:{name:"Фурнитура калитки",unit:"компл",crew:500,sell:1000},
+    work_wicket_lock:{name:"Монтаж замка",unit:"шт",crew:1000,sell:1500},
+    work_wicket_paint:{name:"Окраска швов калитка",unit:"компл",crew:500,sell:600},
+    work_wicket_builtin:{name:"Монтаж встр. калитки",unit:"шт",crew:2000,sell:7000},
+    work_automation:{name:"Монтаж автоматики",unit:"компл",crew:14000,sell:27000},
+    work_piks_full:{name:"Монтаж ПИКС 2м",unit:"шт",crew:2000,sell:4000},
+    work_piks_half:{name:"Монтаж ПИКС 1м",unit:"шт",crew:1500,sell:3000},
+    work_demontage:{name:"Демонтаж забора",unit:"м.п.",crew:200,sell:250},
+    work_delivery:{name:"Доставка",unit:"рейс",crew:12000,sell:12000},
+    work_transport:{name:"Транспорт бригады",unit:"компл",crew:3000,sell:3000}
+  }
+};
+
+let PRICES = JSON.parse(localStorage.getItem('fence_prices')) || JSON.parse(JSON.stringify(DEFAULT_PRICES));
+function savePrices(){localStorage.setItem('fence_prices',JSON.stringify(PRICES));}
+
+// ===== СОСТОЯНИЕ =====
+const LETTERS = ['А','Б','В','Г','Д','Е'];
+const COLORS = ['#e94560','#4ade80','#fbbf24','#60a5fa','#a78bfa','#f472b6'];
+
+let state = {
+  projectName: '',
+  clientName: '',
+  clientPhone: '',
+  clientAddress: '',
+  notes: '',
+  sides: [],
+  piks: [],
+  excavator: 0,
+  delivery: 0,
+  discount: 0,
+  prepayment: 33
+};
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+document.addEventListener('DOMContentLoaded', () => {
+  // Вкладки
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+  });
+  
+  // Поля ввода
+  document.getElementById('project-name').addEventListener('input', e => state.projectName = e.target.value);
+  document.getElementById('client-name').addEventListener('input', e => state.clientName = e.target.value);
+  document.getElementById('client-phone').addEventListener('input', e => state.clientPhone = e.target.value);
+  document.getElementById('client-address').addEventListener('input', e => state.clientAddress = e.target.value);
+  document.getElementById('notes').addEventListener('input', e => state.notes = e.target.value);
+  document.getElementById('excavator-shifts').addEventListener('change', e => state.excavator = +e.target.value);
+  document.getElementById('delivery-trips').addEventListener('input', e => state.delivery = +e.target.value);
+  document.getElementById('discount').addEventListener('input', e => state.discount = +e.target.value);
+  document.getElementById('prepayment').addEventListener('input', e => state.prepayment = +e.target.value);
+  
+  document.getElementById('add-side-btn').addEventListener('click', addSide);
+  
+  // Загрузка состояния
+  loadState();
+  if (state.sides.length === 0) addSide();
+  renderSides();
+  renderPrices();
+  
+  // Онлайн статус
+  window.addEventListener('online', () => document.body.classList.remove('offline'));
+  window.addEventListener('offline', () => document.body.classList.add('offline'));
+  if (!navigator.onLine) document.body.classList.add('offline');
+  
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(e => console.log('SW error:', e));
+  }
+});
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + tab));
+  if (tab === 'client' || tab === 'manager') calculateAll();
+}
+
+function saveState() {
+  localStorage.setItem('fence_state', JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('fence_state');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      Object.assign(state, s);
+      document.getElementById('project-name').value = state.projectName || '';
+      document.getElementById('client-name').value = state.clientName || '';
+      document.getElementById('client-phone').value = state.clientPhone || '';
+      document.getElementById('client-address').value = state.clientAddress || '';
+      document.getElementById('notes').value = state.notes || '';
+      document.getElementById('excavator-shifts').value = state.excavator || 0;
+      document.getElementById('delivery-trips').value = state.delivery || 0;
+      document.getElementById('discount').value = state.discount || 0;
+      document.getElementById('prepayment').value = state.prepayment || 33;
+    } catch(e) {}
+  }
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+// ===== СТОРОНЫ =====
+function addSide() {
+  if (state.sides.length >= 6) return showToast('Максимум 6 сторон', 'error');
+  const idx = state.sides.length;
+  state.sides.push({
+    id: Date.now(),
+    letter: LETTERS[idx],
+    color: COLORS[idx],
+    length: 0,
+    step: 2.5,
+    material: 'proflist',
+    height: 2.0,
+    method: 'svai',
+    pileLen: 2.0,
+    pileDia: 76,
+    fillCps: false,
+    profThick: '04',
+    profSides: 1,
+    shtGap: 0,
+    shtChess: false,
+    gitterWire: 4,
+    hasStrip: false,
+    hasDemontage: false,
+    demontagePrice: 250,
+    demontageLen: 0,
+    gates: [],
+    wickets: []
+  });
+  renderSides();
+  saveState();
+}
+
+function removeSide(idx) {
+  if (state.sides.length <= 1) return showToast('Минимум 1 сторона', 'error');
+  state.sides.splice(idx, 1);
+  state.sides.forEach((s, i) => { s.letter = LETTERS[i]; s.color = COLORS[i]; });
+  renderSides();
+  saveState();
+}
+
+function updateSide(idx, key, val) {
+  const s = state.sides[idx];
+  if (key === 'length' || key === 'height' || key === 'pileLen' || key === 'shtGap' || key === 'demontagePrice' || key === 'demontageLen') val = parseFloat(val) || 0;
+  else if (key === 'step' || key === 'pileDia' || key === 'gitterWire' || key === 'profSides') val = parseFloat(val);
+  else if (key === 'fillCps' || key === 'shtChess' || key === 'hasStrip' || key === 'hasDemontage') val = !!val;
+  s[key] = val;
+  if (key === 'material') renderSides(); // Перерисовать для смены опций
+  saveState();
+}
+
+function toggleSide(idx) {
+  const el = document.getElementById('side-content-' + idx);
+  el.classList.toggle('open');
+}
+
+function renderSides() {
+  const c = document.getElementById('sides-container');
+  c.innerHTML = state.sides.map((s, i) => `
+    <div class="card" style="border-left:4px solid ${s.color}">
+      <div class="side-header" style="background:${s.color}" onclick="toggleSide(${i})">
+        <span style="color:#fff;font-weight:600">Сторона ${s.letter}</span>
+        <button class="delete-btn" style="color:#fff" onclick="event.stopPropagation();removeSide(${i})">✕</button>
+      </div>
+      <div id="side-content-${i}" class="side-content open">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Длина, м</label>
+            <input type="number" step="0.1" value="${s.length}" onchange="updateSide(${i},'length',this.value)">
+          </div>
+          <div class="form-group">
+            <label>Шаг столбов</label>
+            <select onchange="updateSide(${i},'step',this.value)">
+              <option value="2.5" ${s.step==2.5?'selected':''}>2.5 м</option>
+              <option value="2" ${s.step==2?'selected':''}>2 м</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Материал</label>
+            <select onchange="updateSide(${i},'material',this.value)">
+              <option value="gitter" ${s.material=='gitter'?'selected':''}>Гиттер</option>
+              <option value="proflist" ${s.material=='proflist'?'selected':''}>Профлист</option>
+              <option value="shtaketnik" ${s.material=='shtaketnik'?'selected':''}>Штакетник</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Высота, м</label>
+            ${s.material === 'gitter' ? `
+              <select onchange="updateSide(${i},'height',this.value)">
+                <option value="1.53" ${s.height==1.53?'selected':''}>1.53 м</option>
+                <option value="1.73" ${s.height==1.73?'selected':''}>1.73 м</option>
+                <option value="2.03" ${s.height==2.03?'selected':''}>2.03 м</option>
+              </select>
+            ` : `
+              <select onchange="updateSide(${i},'height',this.value)">
+                <option value="1.6" ${s.height==1.6?'selected':''}>1.6 м</option>
+                <option value="1.8" ${s.height==1.8?'selected':''}>1.8 м</option>
+                <option value="2.0" ${s.height==2.0?'selected':''}>2.0 м</option>
+                <option value="2.2" ${s.height==2.2?'selected':''}>2.2 м</option>
+              </select>
+            `}
+          </div>
+        </div>
+        ${s.material === 'gitter' ? `
+          <div class="form-group">
+            <label>Толщина прутка</label>
+            <select onchange="updateSide(${i},'gitterWire',this.value)">
+              <option value="3" ${s.gitterWire==3?'selected':''}>3 мм</option>
+              <option value="4" ${s.gitterWire==4?'selected':''}>4 мм</option>
+              <option value="5" ${s.gitterWire==5?'selected':''}>5 мм</option>
+            </select>
+          </div>
+        ` : ''}
+        ${s.material === 'proflist' ? `
+          <div class="form-row">
+            <div class="form-group">
+              <label>Толщина листа</label>
+              <select onchange="updateSide(${i},'profThick',this.value)">
+                <option value="035" ${s.profThick=='035'?'selected':''}>0.35 мм</option>
+                <option value="04" ${s.profThick=='04'?'selected':''}>0.4 мм</option>
+                <option value="045" ${s.profThick=='045'?'selected':''}>0.45 мм</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Окраска</label>
+              <select onchange="updateSide(${i},'profSides',this.value)">
+                <option value="1" ${s.profSides==1?'selected':''}>1-сторонняя</option>
+                <option value="2" ${s.profSides==2?'selected':''}>2-сторонняя</option>
+              </select>
+            </div>
+          </div>
+        ` : ''}
+        ${s.material === 'shtaketnik' ? `
+          <div class="form-row">
+            <div class="form-group">
+              <label>Зазор, мм</label>
+              <input type="number" value="${s.shtGap}" onchange="updateSide(${i},'shtGap',this.value)">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label" style="margin-top:20px">
+                <input type="checkbox" ${s.shtChess?'checked':''} onchange="updateSide(${i},'shtChess',this.checked)"> Шахматка
+              </label>
+            </div>
+          </div>
+        ` : ''}
+        ${s.material !== 'gitter' ? `
+          <label class="checkbox-label">
+            <input type="checkbox" ${s.hasStrip?'checked':''} onchange="updateSide(${i},'hasStrip',this.checked)"> Финишная планка
+          </label>
+        ` : ''}
+        <div class="form-row" style="margin-top:12px">
+          <div class="form-group">
+            <label>Установка</label>
+            <select onchange="updateSide(${i},'method',this.value)">
+              <option value="svai" ${s.method=='svai'?'selected':''}>Винтовые сваи</option>
+              <option value="butovanie" ${s.method=='butovanie'?'selected':''}>Бутование</option>
+            </select>
+          </div>
+          ${s.method === 'svai' ? `
+            <div class="form-group">
+              <label>Длина сваи</label>
+              <select onchange="updateSide(${i},'pileLen',this.value)">
+                <option value="1.5" ${s.pileLen==1.5?'selected':''}>1.5 м</option>
+                <option value="2" ${s.pileLen==2?'selected':''}>2.0 м</option>
+                <option value="2.5" ${s.pileLen==2.5?'selected':''}>2.5 м</option>
+                <option value="3" ${s.pileLen==3?'selected':''}>3.0 м</option>
+              </select>
+            </div>
+          ` : ''}
+        </div>
+        ${s.method === 'svai' ? `
+          <label class="checkbox-label">
+            <input type="checkbox" ${s.fillCps?'checked':''} onchange="updateSide(${i},'fillCps',this.checked)"> Засыпка ЦПС
+          </label>
+        ` : ''}
+        <label class="checkbox-label" style="margin-top:8px">
+          <input type="checkbox" ${s.hasDemontage?'checked':''} onchange="updateSide(${i},'hasDemontage',this.checked)"> Демонтаж старого забора
+        </label>
+        ${s.hasDemontage ? `
+          <div class="form-row">
+            <div class="form-group">
+              <label>Длина демонтажа, м</label>
+              <input type="number" value="${s.demontageLen}" onchange="updateSide(${i},'demontageLen',this.value)">
+            </div>
+            <div class="form-group">
+              <label>Цена за метр, ₽</label>
+              <input type="number" step="50" value="${s.demontagePrice}" onchange="updateSide(${i},'demontagePrice',this.value)">
+            </div>
+          </div>
+        ` : ''}
+        
+        <!-- Ворота -->
+        <div class="subsection-title" style="margin-top:16px">Ворота</div>
+        <div id="gates-${i}">${renderGates(i)}</div>
+        <button class="add-btn" onclick="addGate(${i})">+ Добавить ворота</button>
+        
+        <!-- Калитки -->
+        <div class="subsection-title">Калитки</div>
+        <div id="wickets-${i}">${renderWickets(i)}</div>
+        <button class="add-btn" onclick="addWicket(${i})">+ Добавить калитку</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== ВОРОТА =====
+function addGate(sideIdx) {
+  const s = state.sides[sideIdx];
+  s.gates.push({
+    id: Date.now(),
+    type: 'sliding',
+    width: 4,
+    hasAutomation: false,
+    extraRemotes: 0,
+    hasBuiltinWicket: false,
+    hasLock: false,
+    hasWicketNearby: false
+  });
+  renderSides();
+  saveState();
+}
+
+function removeGate(sideIdx, gateIdx) {
+  state.sides[sideIdx].gates.splice(gateIdx, 1);
+  renderSides();
+  saveState();
+}
+
+function updateGate(sideIdx, gateIdx, key, val) {
+  const g = state.sides[sideIdx].gates[gateIdx];
+  if (key === 'width' || key === 'extraRemotes') val = parseFloat(val);
+  else if (key === 'hasAutomation' || key === 'hasBuiltinWicket' || key === 'hasLock' || key === 'hasWicketNearby') val = !!val;
+  g[key] = val;
+  if (key === 'type') renderSides();
+  saveState();
+}
+
+function renderGates(sideIdx) {
+  const s = state.sides[sideIdx];
+  const isGitter = s.material === 'gitter';
+  return s.gates.map((g, gi) => `
+    <div class="gate-item">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <strong>Ворота ${gi+1}</strong>
+        <button class="delete-btn" onclick="removeGate(${sideIdx},${gi})">✕</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Тип</label>
+          <select onchange="updateGate(${sideIdx},${gi},'type',this.value)">
+            <option value="sliding" ${g.type=='sliding'?'selected':''}>Откатные</option>
+            <option value="swing" ${g.type=='swing'?'selected':''}>Распашные</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ширина, м</label>
+          <select onchange="updateGate(${sideIdx},${gi},'width',this.value)">
+            ${g.type === 'sliding' ? `
+              <option value="3" ${g.width==3?'selected':''}>3 м</option>
+              <option value="3.5" ${g.width==3.5?'selected':''}>3.5 м</option>
+              <option value="4" ${g.width==4?'selected':''}>4 м</option>
+              <option value="4.5" ${g.width==4.5?'selected':''}>4.5 м</option>
+              <option value="5" ${g.width==5?'selected':''}>5 м</option>
+              <option value="5.5" ${g.width==5.5?'selected':''}>5.5 м</option>
+              <option value="6" ${g.width==6?'selected':''}>6 м</option>
+            ` : `
+              <option value="3" ${g.width==3?'selected':''}>3 м</option>
+              <option value="3.5" ${g.width==3.5?'selected':''}>3.5 м</option>
+              <option value="4" ${g.width==4?'selected':''}>4 м</option>
+            `}
+          </select>
+        </div>
+      </div>
+      ${g.type === 'sliding' ? `
+        <label class="checkbox-label">
+          <input type="checkbox" ${g.hasAutomation?'checked':''} onchange="updateGate(${sideIdx},${gi},'hasAutomation',this.checked)"> Автоматика
+        </label>
+        ${g.hasAutomation ? `
+          <div class="form-group" style="margin-top:8px">
+            <label>Доп. брелоки</label>
+            <select onchange="updateGate(${sideIdx},${gi},'extraRemotes',this.value)">
+              <option value="0" ${g.extraRemotes==0?'selected':''}>0</option>
+              <option value="1" ${g.extraRemotes==1?'selected':''}>1</option>
+              <option value="2" ${g.extraRemotes==2?'selected':''}>2</option>
+              <option value="3" ${g.extraRemotes==3?'selected':''}>3</option>
+            </select>
+          </div>
+        ` : ''}
+        <label class="checkbox-label">
+          <input type="checkbox" ${g.hasWicketNearby?'checked':''} onchange="updateGate(${sideIdx},${gi},'hasWicketNearby',this.checked)"> Калитка рядом (5 свай)
+        </label>
+      ` : ''}
+      <label class="checkbox-label">
+        <input type="checkbox" ${g.hasBuiltinWicket?'checked':''} onchange="updateGate(${sideIdx},${gi},'hasBuiltinWicket',this.checked)"> Встроенная калитка
+      </label>
+      ${g.hasBuiltinWicket ? `
+        <label class="checkbox-label">
+          <input type="checkbox" ${g.hasLock?'checked':''} onchange="updateGate(${sideIdx},${gi},'hasLock',this.checked)"> Врезной замок
+        </label>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+// ===== КАЛИТКИ =====
+function addWicket(sideIdx) {
+  const s = state.sides[sideIdx];
+  s.wickets.push({
+    id: Date.now(),
+    position: 'separate',
+    hasLock: false
+  });
+  renderSides();
+  saveState();
+}
+
+function removeWicket(sideIdx, wIdx) {
+  state.sides[sideIdx].wickets.splice(wIdx, 1);
+  renderSides();
+  saveState();
+}
+
+function updateWicket(sideIdx, wIdx, key, val) {
+  const w = state.sides[sideIdx].wickets[wIdx];
+  if (key === 'hasLock') val = !!val;
+  w[key] = val;
+  saveState();
+}
+
+function renderWickets(sideIdx) {
+  const s = state.sides[sideIdx];
+  return s.wickets.map((w, wi) => `
+    <div class="wicket-item">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <strong>Калитка ${wi+1}</strong>
+        <button class="delete-btn" onclick="removeWicket(${sideIdx},${wi})">✕</button>
+      </div>
+      <div class="form-group">
+        <label>Расположение</label>
+        <select onchange="updateWicket(${sideIdx},${wi},'position',this.value)">
+          <option value="separate" ${w.position=='separate'?'selected':''}>Отдельно стоящая (2 сваи)</option>
+          <option value="nearby_swing" ${w.position=='nearby_swing'?'selected':''}>Рядом с распашными (1 свая)</option>
+          <option value="nearby_sliding" ${w.position=='nearby_sliding'?'selected':''}>Рядом с откатными (2 сваи)</option>
+        </select>
+      </div>
+      <label class="checkbox-label">
+        <input type="checkbox" ${w.hasLock?'checked':''} onchange="updateWicket(${sideIdx},${wi},'hasLock',this.checked)"> Врезной замок
+      </label>
+    </div>
+  `).join('');
+}
+
+// ===== ПИКС =====
+function addPiks() {
+  state.piks.push({
+    id: Date.now(),
+    count: 1,
+    isHalf: false,
+    panelColor: 'yellow',
+    capColor: '7024'
+  });
+  renderPiks();
+  saveState();
+}
+
+function removePiks(idx) {
+  state.piks.splice(idx, 1);
+  renderPiks();
+  saveState();
+}
+
+function updatePiks(idx, key, val) {
+  const p = state.piks[idx];
+  if (key === 'count') val = parseInt(val) || 1;
+  else if (key === 'isHalf') val = !!val;
+  p[key] = val;
+  saveState();
+}
+
+function renderPiks() {
+  const c = document.getElementById('piks-container');
+  c.innerHTML = state.piks.map((p, i) => `
+    <div class="gate-item">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <strong>ПИКС ${i+1}</strong>
+        <button class="delete-btn" onclick="removePiks(${i})">✕</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Количество</label>
+          <input type="number" min="1" value="${p.count}" onchange="updatePiks(${i},'count',this.value)">
+        </div>
+        <div class="form-group">
+          <label>Высота</label>
+          <select onchange="updatePiks(${i},'isHalf',this.value==='true')">
+            <option value="false" ${!p.isHalf?'selected':''}>2м (целый)</option>
+            <option value="true" ${p.isHalf?'selected':''}>1м (половинный)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Цвет панелей</label>
+          <select onchange="updatePiks(${i},'panelColor',this.value)">
+            <option value="yellow" ${p.panelColor=='yellow'?'selected':''}>Жёлтый кирпич</option>
+            <option value="red" ${p.panelColor=='red'?'selected':''}>Красный кирпич</option>
+            <option value="brown" ${p.panelColor=='brown'?'selected':''}>Коричневый кирпич</option>
+            <option value="graphite" ${p.panelColor=='graphite'?'selected':''}>Графитовый кирпич</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Цвет крышки</label>
+          <select onchange="updatePiks(${i},'capColor',this.value)">
+            <option value="7024" ${p.capColor=='7024'?'selected':''}>RAL 7024 Графит</option>
+            <option value="8017" ${p.capColor=='8017'?'selected':''}>RAL 8017 Коричневый</option>
+            <option value="6005" ${p.capColor=='6005'?'selected':''}>RAL 6005 Зелёный</option>
+            <option value="3005" ${p.capColor=='3005'?'selected':''}>RAL 3005 Вишнёвый</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== РАСЧЁТ =====
+function getPrice(type, code) {
+  const p = PRICES[type][code];
+  return p || {name:'?',unit:'шт',buy:0,sell:0,crew:0};
+}
+
+function calculateAll() {
+  const result = { sides: [], extras: { materials: [], works: [] }, totals: { buy: 0, sell: 0, crew: 0 } };
+  
+  // Расчёт каждой стороны
+  state.sides.forEach((s, si) => {
+    const sideResult = calculateSide(s);
+    result.sides.push(sideResult);
+    result.totals.buy += sideResult.totals.buy;
+    result.totals.sell += sideResult.totals.sell;
+    result.totals.crew += sideResult.totals.crew;
+  });
+  
+  // Экскаватор
+  if (state.excavator > 0) {
+    const p = getPrice('materials', 'excavator');
+    result.extras.materials.push({ name: p.name, unit: p.unit, qty: state.excavator, buy: p.buy, sell: p.sell, sumBuy: p.buy * state.excavator, sumSell: p.sell * state.excavator });
+    result.totals.buy += p.buy * state.excavator;
+    result.totals.sell += p.sell * state.excavator;
+  }
+  
+  // Доставка
+  if (state.delivery > 0) {
+    const p = getPrice('works', 'work_delivery');
+    result.extras.works.push({ name: p.name, unit: p.unit, qty: state.delivery, crew: p.crew, sell: p.sell, sumCrew: p.crew * state.delivery, sumSell: p.sell * state.delivery });
+    result.totals.sell += p.sell * state.delivery;
+    result.totals.crew += p.crew * state.delivery;
+  }
+  
+  // ПИКС
+  state.piks.forEach(piks => {
+    const piksResult = calculatePiks(piks);
+    result.extras.materials.push(...piksResult.materials);
+    result.extras.works.push(...piksResult.works);
+    result.totals.buy += piksResult.totals.buy;
+    result.totals.sell += piksResult.totals.sell;
+    result.totals.crew += piksResult.totals.crew;
+  });
+  
+  // Скидка
+  if (state.discount > 0) {
+    result.discountAmount = Math.round(result.totals.sell * state.discount / 100);
+    result.totals.sell -= result.discountAmount;
+  }
+  
+  // Предоплата
+  result.prepayment = Math.ceil(result.totals.sell * state.prepayment / 100 / 10000) * 10000;
+  
+  renderEstimates(result);
+  return result;
+}
+
+function calculateSide(s) {
+  const result = { 
+    letter: s.letter, 
+    color: s.color,
+    length: s.length,
+    material: s.material,
+    fence: { materials: [], works: [] }, 
+    gates: [], 
+    wickets: [],
+    totals: { buy: 0, sell: 0, crew: 0 } 
+  };
+  
+  if (s.length <= 0) return result;
+  
+  const posts = Math.ceil(s.length / s.step) + 1;
+  const m = result.fence.materials;
+  const w = result.fence.works;
+  
+  // Столбы
+  if (s.method === 'butovanie') {
+    addMat(m, 'post_60x60_3m', posts);
+    addMat(m, 'cap_plastic_60', posts);
+    const gravel = Math.ceil(posts * 35 / 40);
+    addMat(m, 'gravel_bag', gravel);
+    addWork(w, 'work_drilling', posts);
+    addWork(w, 'work_butovanie', posts);
+  } else {
+    const pileCode = 'pile_76_' + Math.round(s.pileLen * 10);
+    addMat(m, pileCode, posts);
+    addMat(m, 'cap_76', posts);
+    addMat(m, 'post_60x60_2m', posts);
+    addMat(m, 'cap_plastic_60', posts);
+    addWork(w, 'work_pile_install', posts);
+    addWork(w, 'work_cap_weld', posts);
+    addWork(w, 'work_post_weld', posts);
+    if (s.fillCps) {
+      const cps = Math.ceil(posts * s.pileLen * 4.5 * 1.5 / 25);
+      addMat(m, 'cps_bag', cps);
+      addWork(w, 'work_cps_fill', posts);
+    }
+  }
+  
+  // Заполнение
+  if (s.material === 'gitter') {
+    const sections = Math.ceil(s.length / s.step);
+    const h = Math.round(s.height * 100);
+    const code = `gitter_${h}_${s.gitterWire}`;
+    addMat(m, code, sections);
+    const clamps = Math.ceil((posts * 3 + 10) / 50) * 50;
+    addMat(m, 'clamp', clamps);
+    addWork(w, 'work_gitter_install', sections);
+  } else {
+    const lagsCount = s.height >= 2 ? 3 : 2;
+    const lags = Math.ceil(s.length * lagsCount / 6);
+    addMat(m, 'lag_40x20_6m', lags);
+    const weldPoints = posts * lagsCount;
+    addWork(w, 'work_lag_weld', weldPoints);
+    addWork(w, 'work_weld_paint', weldPoints);
+    const paint = Math.ceil(s.length / 60);
+    addMat(m, 'paint_touch', paint);
+    
+    if (s.material === 'proflist') {
+      const sheets = Math.ceil(s.length / 1.15);
+      const h = Math.round(s.height * 10);
+      const code = `proflist_${s.profThick}_${s.profSides}_${h}`;
+      addMat(m, code, sheets);
+      const screws = Math.ceil(s.length * 10 / 100) * 100 + 100;
+      addMat(m, 'screw_55x19', screws);
+      const area = Math.ceil(s.length * s.height);
+      addWork(w, 'work_proflist_install', area);
+    } else {
+      const width = 125, gap = s.shtGap || 0;
+      let pieces = Math.ceil(s.length * 1000 / (width + gap));
+      if (s.shtChess) pieces *= 2;
+      const h = Math.round(s.height * 10);
+      addMat(m, `shtaketnik_${h}`, pieces);
+      const screws = Math.ceil(s.length * 10 / 100) * 100 + 100;
+      addMat(m, 'screw_55x19', screws);
+      const area = Math.ceil(s.length * s.height);
+      addWork(w, 'work_shtaketnik_install', area);
+    }
+    
+    if (s.hasStrip) {
+      const strips = Math.ceil(s.length / 2 + 1);
+      addMat(m, 'finishing_strip', strips);
+      addWork(w, 'work_strip_install', strips);
+    }
+  }
+  
+  // Расходники
+  addMat(m, 'consumables', 1);
+  
+  // Демонтаж
+  if (s.hasDemontage && s.demontageLen > 0) {
+    w.push({ name: `Демонтаж (${s.demontagePrice}₽/м)`, unit: 'м.п.', qty: s.demontageLen, crew: Math.round(s.demontagePrice * 0.8), sell: s.demontagePrice, sumCrew: Math.round(s.demontageLen * s.demontagePrice * 0.8), sumSell: s.demontageLen * s.demontagePrice });
+  }
+  
+  // Ворота
+  s.gates.forEach(g => {
+    const gr = calculateGate(g, s);
+    result.gates.push(gr);
+  });
+  
+  // Калитки
+  s.wickets.forEach(wk => {
+    const wr = calculateWicket(wk, s);
+    result.wickets.push(wr);
+  });
+  
+  // Подсчёт итогов
+  m.forEach(i => { result.totals.buy += i.sumBuy; result.totals.sell += i.sumSell; });
+  w.forEach(i => { result.totals.crew += i.sumCrew; result.totals.sell += i.sumSell; });
+  result.gates.forEach(g => { result.totals.buy += g.totals.buy; result.totals.sell += g.totals.sell; result.totals.crew += g.totals.crew; });
+  result.wickets.forEach(wk => { result.totals.buy += wk.totals.buy; result.totals.sell += wk.totals.sell; result.totals.crew += wk.totals.crew; });
+  
+  return result;
+}
+
+function calculateGate(g, side) {
+  const result = { type: g.type, width: g.width, materials: [], works: [], totals: { buy: 0, sell: 0, crew: 0 } };
+  const m = result.materials, w = result.works;
+  const isGitter = side.material === 'gitter';
+  const pileLen = side.pileLen || 2;
+  
+  if (g.type === 'sliding') {
+    const gw = Math.round(g.width * 10);
+    const gateCode = isGitter ? `gate_gitter_sliding_${gw}` : `gate_sliding_${gw}`;
+    addMat(m, gateCode, 1);
+    addMat(m, 'foundation_sliding', 1);
+    const piles = g.hasWicketNearby ? 5 : 6;
+    addMat(m, `pile_76_${Math.round(pileLen * 10)}`, piles);
+    addWork(w, 'work_gate_sliding', 1);
+    if (side.fillCps) {
+      const cps = Math.ceil(piles * pileLen * 4.5 * 1.5 / 25);
+      addMat(m, 'cps_bag', cps);
+      addWork(w, 'work_cps_fill', piles);
+    }
+    if (!isGitter) {
+      const area = g.width * side.height;
+      if (side.material === 'proflist') {
+        const sheets = Math.ceil(g.width / 1.15);
+        const h = Math.round(side.height * 10);
+        addMat(m, `proflist_${side.profThick}_${side.profSides}_${h}`, sheets);
+        addWork(w, 'work_gate_fill', Math.ceil(area));
+      } else {
+        const width = 125, gap = side.shtGap || 0;
+        let pieces = Math.ceil(g.width * 1000 / (width + gap)) + 4;
+        if (side.shtChess) pieces *= 2;
+        const h = Math.round(side.height * 10);
+        addMat(m, `shtaketnik_${h}`, pieces);
+        addWork(w, 'work_gate_fill', Math.ceil(area));
+      }
+    }
+    if (g.hasAutomation) {
+      addMat(m, 'came_bx608', 1);
+      addMat(m, 'gear_rack', Math.ceil(g.width + 1));
+      addMat(m, 'photo_sensor', 1);
+      addMat(m, 'wires_gofra', 1);
+      addMat(m, 'lamp_signal', 1);
+      addMat(m, 'antenna', 1);
+      if (g.extraRemotes > 0) addMat(m, 'remote', g.extraRemotes);
+      addWork(w, 'work_automation', 1);
+    }
+  } else {
+    const gw = Math.round(g.width * 10);
+    const gateCode = isGitter ? `gate_gitter_swing_${gw}` : `gate_swing_${gw}`;
+    addMat(m, gateCode, 1);
+    addMat(m, `pile_89_${Math.round(pileLen * 10)}`, 2);
+    addMat(m, 'cap_89', 2);
+    addMat(m, 'post_80x80_3m', 2);
+    addMat(m, 'cap_plastic_80', 2);
+    addWork(w, 'work_pile_install', 2);
+    addWork(w, 'work_cap_weld', 2);
+    addWork(w, 'work_post_weld', 2);
+    addWork(w, 'work_swing_leaf', 2);
+    addWork(w, 'work_swing_hardware', 1);
+    addWork(w, 'work_swing_paint', 1);
+    if (side.fillCps) {
+      const cps = Math.ceil(2 * pileLen * 6.2 * 1.5 / 25);
+      addMat(m, 'cps_bag', cps);
+      addWork(w, 'work_cps_fill', 2);
+    }
+    if (!isGitter) {
+      const area = g.width * side.height;
+      if (side.material === 'proflist') {
+        const sheets = Math.ceil(g.width / 1.15);
+        const h = Math.round(side.height * 10);
+        addMat(m, `proflist_${side.profThick}_${side.profSides}_${h}`, sheets);
+      } else {
+        const width = 125, gap = side.shtGap || 0;
+        let pieces = Math.ceil(g.width * 1000 / (width + gap)) + 4;
+        if (side.shtChess) pieces *= 2;
+        const h = Math.round(side.height * 10);
+        addMat(m, `shtaketnik_${h}`, pieces);
+      }
+      addWork(w, 'work_swing_fill', Math.ceil(area));
+    }
+  }
+  
+  if (g.hasBuiltinWicket) {
+    addMat(m, 'wicket_builtin', 1);
+    if (g.hasLock) { addMat(m, 'lock_mortise', 1); addWork(w, 'work_wicket_lock', 1); }
+    addWork(w, 'work_wicket_builtin', 1);
+  }
+  
+  m.forEach(i => { result.totals.buy += i.sumBuy; result.totals.sell += i.sumSell; });
+  w.forEach(i => { result.totals.crew += i.sumCrew; result.totals.sell += i.sumSell; });
+  return result;
+}
+
+function calculateWicket(wk, side) {
+  const result = { materials: [], works: [], totals: { buy: 0, sell: 0, crew: 0 } };
+  const m = result.materials, w = result.works;
+  const isGitter = side.material === 'gitter';
+  const pileLen = side.pileLen || 2;
+  
+  addMat(m, isGitter ? 'wicket_gitter' : 'wicket_standard', 1);
+  
+  const piles = wk.position === 'nearby_swing' ? 1 : 2;
+  addMat(m, `pile_89_${Math.round(pileLen * 10)}`, piles);
+  addMat(m, 'cap_89', piles);
+  addMat(m, 'post_80x80_3m', piles);
+  addMat(m, 'cap_plastic_80', piles);
+  
+  if (wk.hasLock) addMat(m, 'lock_mortise', 1);
+  
+  addWork(w, 'work_pile_install', piles);
+  addWork(w, 'work_cap_weld', piles);
+  addWork(w, 'work_post_weld', piles);
+  addWork(w, 'work_wicket_mount', 1);
+  addWork(w, 'work_wicket_hardware', 1);
+  addWork(w, 'work_wicket_paint', 1);
+  if (wk.hasLock) addWork(w, 'work_wicket_lock', 1);
+  
+  if (side.fillCps) {
+    const cps = Math.ceil(piles * pileLen * 6.2 * 1.5 / 25);
+    addMat(m, 'cps_bag', cps);
+    addWork(w, 'work_cps_fill', piles);
+  }
+  
+  if (!isGitter) {
+    const area = 1 * side.height;
+    if (side.material === 'proflist') {
+      const h = Math.round(side.height * 10);
+      addMat(m, `proflist_${side.profThick}_${side.profSides}_${h}`, 1);
+    } else {
+      const width = 125, gap = side.shtGap || 0;
+      let pieces = Math.ceil(1000 / (width + gap)) + 4;
+      if (side.shtChess) pieces *= 2;
+      const h = Math.round(side.height * 10);
+      addMat(m, `shtaketnik_${h}`, pieces);
+    }
+    addWork(w, 'work_wicket_fill', Math.ceil(area));
+  }
+  
+  m.forEach(i => { result.totals.buy += i.sumBuy; result.totals.sell += i.sumSell; });
+  w.forEach(i => { result.totals.crew += i.sumCrew; result.totals.sell += i.sumSell; });
+  return result;
+}
+
+function calculatePiks(p) {
+  const result = { materials: [], works: [], totals: { buy: 0, sell: 0, crew: 0 } };
+  const m = result.materials, w = result.works;
+  
+  const panels = p.count * (p.isHalf ? 7 : 14);
+  const guides = p.count * (p.isHalf ? 2 : 4);
+  const fasteners = Math.ceil((guides * 4 + panels * 2 + 50) / 100) * 100;
+  
+  addMat(m, `piks_${p.panelColor}`, panels);
+  addMat(m, 'piks_cap', p.count);
+  addMat(m, 'piks_guide', guides);
+  addMat(m, 'piks_fastener', fasteners);
+  addWork(w, p.isHalf ? 'work_piks_half' : 'work_piks_full', p.count);
+  
+  m.forEach(i => { result.totals.buy += i.sumBuy; result.totals.sell += i.sumSell; });
+  w.forEach(i => { result.totals.crew += i.sumCrew; result.totals.sell += i.sumSell; });
+  return result;
+}
+
+function addMat(arr, code, qty) {
+  if (qty <= 0) return;
+  const p = getPrice('materials', code);
+  arr.push({ code, name: p.name, unit: p.unit, qty, buy: p.buy, sell: p.sell, sumBuy: Math.round(p.buy * qty), sumSell: Math.round(p.sell * qty) });
+}
+
+function addWork(arr, code, qty) {
+  if (qty <= 0) return;
+  const p = getPrice('works', code);
+  arr.push({ code, name: p.name, unit: p.unit, qty, crew: p.crew || 0, sell: p.sell, sumCrew: Math.round((p.crew || 0) * qty), sumSell: Math.round(p.sell * qty) });
+}
+}">Сторона ${s.letter}</div>
+          <table>
+            <tr><th>Наименование</th><th class="text-right">Кол</th><th class="text-right">Закуп</th><th class="text-right">Продажа</th><th class="text-right">Маржа</th></tr>
+            ${s.fence.materials.map(m => `<tr><td>${m.name}</td><td class="text-right">${m.qty}</td><td class="text-right">${fmt(m.sumBuy)}</td><td class="text-right">${fmt(m.sumSell)}</td><td class="text-right">${fmt(m.sumSell - m.sumBuy)}</td></tr>`).join('')}
+            ${s.fence.works.map(w => `<tr><td>${w.name}</td><td class="text-right">${w.qty}</td><td class="text-right">${fmt(w.sumCrew)}</td><td class="text-right">${fmt(w.sumSell)}</td><td class="text-right">${fmt(w.sumSell - w.sumCrew)}</td></tr>`).join('')}
+            ${s.gates.flatMap(g => [...g.materials.map(m => `<tr><td>${m.name}</td><td class="text-right">${m.qty}</td><td class="text-right">${fmt(m.sumBuy)}</td><td class="text-right">${fmt(m.sumSell)}</td><td class="text-right">${fmt(m.sumSell - m.sumBuy)}</td></tr>`), ...g.works.map(w => `<tr><td>${w.name}</td><td class="text-right">${w.qty}</td><td class="text-right">${fmt(w.sumCrew)}</td><td class="text-right">${fmt(w.sumSell)}</td><td class="text-right">${fmt(w.sumSell - w.sumCrew)}</td></tr>`)]).join('')}
+            ${s.wickets.flatMap(wk => [...wk.materials.map(m => `<tr><td>${m.name}</td><td class="text-right">${m.qty}</td><td class="text-right">${fmt(m.sumBuy)}</td><td class="text-right">${fmt(m.sumSell)}</td><td class="text-right">${fmt(m.sumSell - m.sumBuy)}</td></tr>`), ...wk.works.map(w => `<tr><td>${w.name}</td><td class="text-right">${w.qty}</td><td class="text-right">${fmt(w.sumCrew)}</td><td class="text-right">${fmt(w.sumSell)}</td><td class="text-right">${fmt(w.sumSell - w.sumCrew)}</td></tr>`)]).join('')}
+          </table>
+        `;
+      }).join('')}
+      
+      <div class="totals" style="margin-top:20px">
+        <div class="total-row"><span class="total-label">Закуп материалов</span><span class="total-value">${fmt(r.totals.buy)}</span></div>
+        <div class="total-row"><span class="total-label">Оплата бригаде</span><span class="total-value">${fmt(r.totals.crew)}</span></div>
+        <div class="total-row"><span class="total-label">Себестоимость</span><span class="total-value">${fmt(r.totals.buy + r.totals.crew)}</span></div>
+        ${r.discountAmount ? `<div class="total-row"><span class="total-label">Скидка</span><span class="total-value">-${fmt(r.discountAmount)}</span></div>` : ''}
+        <div class="total-row"><span class="total-label">Продажа</span><span class="total-value accent">${fmt(r.totals.sell)}</span></div>
+        <div class="total-row"><span class="total-label">Маржа</span><span class="total-value success">${fmt(margin)} (${marginPct}%)</span></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('estimate-manager').innerHTML = html;
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('ru-RU') + ' ₽'; }
+
+// ===== ЭКСПОРТ =====
+function savePDF(full) {
+  showToast('PDF генерация... (используйте Print to PDF)', 'success');
+  const content = document.getElementById(full ? 'estimate-manager' : 'estimate-client').innerHTML;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Смета ${state.projectName}</title><style>body{font-family:Arial,sans-serif;padding:20px;max-width:800px;margin:0 auto}table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border:1px solid #ddd;padding:6px;text-align:left}th{background:#f5f5f5}.text-right{text-align:right}.section-title{background:#e94560;color:#fff;padding:10px;margin:15px 0 10px;border-radius:4px}.subsection-title{background:#eee;padding:8px;margin:10px 0}.totals{background:#f9f9f9;padding:15px;margin-top:15px;border-radius:4px}.total-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #eee}.accent{color:#e94560;font-size:18px;font-weight:bold}.success{color:#22c55e}</style></head><body>${content}</body></html>`);
+  win.document.close();
+  win.print();
+}
+
+function sharePDF() {
+  if (navigator.share) {
+    navigator.share({ title: `Смета ${state.projectName}`, text: `Смета забора: ${state.projectName}` });
+  } else {
+    savePDF(false);
+  }
+}
+
+function saveExcel() {
+  showToast('Excel: скопируйте таблицу в Excel', 'success');
+  const content = document.getElementById('estimate-manager').innerHTML;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Смета ${state.projectName}</title></head><body>${content}</body></html>`);
+  win.document.close();
+}
+
+// ===== ЦЕНЫ =====
+function renderPrices() {
+  const cats = [
+    { name: 'Гиттер', codes: Object.keys(PRICES.materials).filter(k => k.startsWith('gitter')) },
+    { name: 'Профлист', codes: Object.keys(PRICES.materials).filter(k => k.startsWith('proflist')) },
+    { name: 'Штакетник', codes: Object.keys(PRICES.materials).filter(k => k.startsWith('shtaketnik') || k === 'finishing_strip') },
+    { name: 'Столбы и сваи', codes: ['post_60x60_2m','post_60x60_3m','post_80x80_3m','cap_plastic_60','cap_plastic_80','pile_76_15','pile_76_20','pile_76_25','pile_76_30','pile_89_15','pile_89_20','pile_89_25','pile_89_30','cap_76','cap_89','lag_40x20_6m'] },
+    { name: 'Крепёж', codes: ['clamp','bracket','screw_55x19'] },
+    { name: 'Ворота откатные', codes: Object.keys(PRICES.materials).filter(k => k.startsWith('gate_sliding') || k === 'foundation_sliding') },
+    { name: 'Ворота распашные', codes: Object.keys(PRICES.materials).filter(k => k.startsWith('gate_swing') && !k.includes('gitter')) },
+    { name: 'Ворота Гиттер', codes: Object.keys(PRICES.materials).filter(k => k.includes('gate_gitter')) },
+    { name: 'Калитки', codes: ['wicket_standard','wicket_gitter','wicket_builtin','lock_mortise'] },
+    { name: 'Автоматика', codes: ['came_bx608','gear_rack','remote','photo_sensor','wires_gofra','lamp_signal','antenna'] },
+    { name: 'ПИКС', codes: Object.keys(PRICES.materials).filter(k => k.startsWith('piks')) },
+    { name: 'Прочее', codes: ['gravel_bag','cps_bag','paint_touch','consumables','excavator'] }
+  ];
+  
+  const workCats = [
+    { name: 'Работы - установка', codes: ['work_drilling','work_butovanie','work_pile_install','work_cap_weld','work_post_weld','work_cps_fill'] },
+    { name: 'Работы - монтаж', codes: ['work_lag_weld','work_weld_paint','work_gitter_install','work_proflist_install','work_shtaketnik_install','work_strip_install'] },
+    { name: 'Работы - ворота', codes: ['work_gate_sliding','work_gate_fill','work_swing_leaf','work_swing_fill','work_swing_hardware','work_swing_paint'] },
+    { name: 'Работы - калитки', codes: ['work_wicket_mount','work_wicket_fill','work_wicket_hardware','work_wicket_lock','work_wicket_paint','work_wicket_builtin'] },
+    { name: 'Работы - прочее', codes: ['work_automation','work_piks_full','work_piks_half','work_demontage','work_delivery','work_transport'] }
+  ];
+  
+  const html = `
+    <div class="card"><div class="card-title">Материалы</div>
+    ${cats.map((c, ci) => `
+      <div class="price-cat">
+        <div class="price-cat-header" onclick="togglePriceCat(${ci})">${c.name}</div>
+        <div class="price-items" id="price-cat-${ci}">
+          ${c.codes.map(code => {
+            const p = PRICES.materials[code];
+            if (!p) return '';
+            return `<div class="price-item"><span>${p.name}</span><input type="number" class="price-input" value="${p.buy}" onchange="updatePrice('materials','${code}','buy',this.value)"><input type="number" class="price-input" value="${p.sell}" onchange="updatePrice('materials','${code}','sell',this.value)"></div>`;
+          }).join('')}
+        </div>
+      </div>
+    `).join('')}
+    </div>
+    
+    <div class="card"><div class="card-title">Работы (бригада / клиент)</div>
+    ${workCats.map((c, ci) => `
+      <div class="price-cat">
+        <div class="price-cat-header" onclick="togglePriceCat(${100 + ci})">${c.name}</div>
+        <div class="price-items" id="price-cat-${100 + ci}">
+          ${c.codes.map(code => {
+            const p = PRICES.works[code];
+            if (!p) return '';
+            return `<div class="price-item"><span>${p.name}</span><input type="number" class="price-input" value="${p.crew || 0}" onchange="updatePrice('works','${code}','crew',this.value)"><input type="number" class="price-input" value="${p.sell}" onchange="updatePrice('works','${code}','sell',this.value)"></div>`;
+          }).join('')}
+        </div>
+      </div>
+    `).join('')}
+    </div>
+  `;
+  document.getElementById('prices-container').innerHTML = html;
+}
+
+function togglePriceCat(idx) {
+  document.getElementById('price-cat-' + idx).classList.toggle('open');
+}
+
+function updatePrice(type, code, field, val) {
+  PRICES[type][code][field] = parseFloat(val) || 0;
+  savePrices();
+}
+
+function exportPricesFile() {
+  const blob = new Blob([JSON.stringify(PRICES, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fence_prices_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  showToast('Цены экспортированы');
+}
+
+function importPricesFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      PRICES = JSON.parse(e.target.result);
+      savePrices();
+      renderPrices();
+      showToast('Цены импортированы');
+    } catch (err) {
+      showToast('Ошибка импорта', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetAllPrices() {
+  if (confirm('Сбросить все цены на значения по умолчанию?')) {
+    PRICES = JSON.parse(JSON.stringify(DEFAULT_PRICES));
+    savePrices();
+    renderPrices();
+    showToast('Цены сброшены');
+  }
+}
+</script>
+</body>
+</html>
